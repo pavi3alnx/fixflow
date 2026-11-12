@@ -1,0 +1,31 @@
+# IDE and AI tools
+.idea/
+.refact/
+.github/modernize/
+
+# Java
+**/target/
+*.class
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local configuration
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# React
+node_modules/
+dist/
+
+# Python
+__pycache__/
+.venv/
+
+# Logs
+*.log
