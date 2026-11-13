@@ -1,14 +1,16 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01)
+## Current foundation (FF-01 and FF-02)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
-`com.fixflow.backend`. Today it contains the application entry point and one
-Spring context-loading test. Maven dependencies provide Spring MVC, validation,
-Spring Data JPA, the PostgreSQL driver, Lombok, and test support. There are no
-feature entities, repositories, controllers, authentication, or implemented
-request transitions. FF-02 owns database schema and migrations; FF-01 does not
-create or change tables.
+`com.fixflow.backend`. It contains the application entry point, a Spring context
+test, and focused database migration tests. Maven dependencies provide Spring
+MVC, validation, Spring Data JPA, the PostgreSQL driver, Lombok, Flyway, and test
+support. FF-02 adds seven versioned SQL migrations for the 12 domain tables;
+see [the ER diagram](er-diagram.md) and [migration procedure](database-migrations.md).
+There are no feature entities, repositories, controllers, authentication, or
+implemented request transitions. Existing databases require reviewed explicit
+adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
 will present the UI; the API will own validation, authorization, business rules,
@@ -109,35 +111,39 @@ by the wrapper; confirm its Java version with `mvnw.cmd -v`.
 
 ## Verification and database safety
 
-The current resources contain no SQL initialization scripts or explicit
-schema-changing startup settings. With PostgreSQL and no migration tooling,
-Spring Boot defaults to no Hibernate schema creation. For explicit protection
-when verifying an existing database, temporary process-only overrides may be
-used:
+Flyway now owns schema changes on application startup. Automatic baselining
+and clean are disabled; Hibernate DDL and Spring SQL initialization are disabled.
+Follow the [existing-database adoption procedure](database-migrations.md) before
+starting against an existing schema. Hibernate/SQL-init settings alone do not
+prevent Flyway migrations. For a connectivity-only run that must not migrate,
+use these temporary process-only overrides:
 
 ```powershell
 $env:SPRING_JPA_HIBERNATE_DDL_AUTO = 'none'
 $env:SPRING_SQL_INIT_MODE = 'never'
+$env:SPRING_FLYWAY_ENABLED = 'false'
 .\mvnw.cmd -B clean verify
 .\mvnw.cmd spring-boot:run
 ```
 
 Remove these temporary variables afterward if they were previously unset, or
-restore their previous values. These settings prevent ORM DDL and Spring SQL
-initialization; they do not implement migrations. Recheck startup scripts and
+restore their previous values. These settings prevent ORM DDL, Spring SQL initialization, and Flyway startup
+migrations for that process; they do not implement database adoption. Recheck startup scripts and
 configuration as the application evolves.
 
 Successful startup should report Tomcat on port 8081 and a successful Hikari
 PostgreSQL connection with Hibernate database information identifying the
 `fixflow` JDBC URL. A listening port or a 404 at `/` alone does not prove
 database connectivity; a root 404 is expected because there is no root route.
-The context-loading test uses the configured database, so credentials and a
-reachable database are necessary for local tests.
+Automated tests override the datasource with disposable Testcontainers databases;
+they require Docker and do not use the local database or DB_PASSWORD. The default
+PostgreSQL image is 17; see the migration guide for verification against 18.
 
 The existing GitHub Actions workflow uses Ubuntu, Temurin Java 21, Maven
 `mvn -B clean verify`, and an isolated PostgreSQL 17 service with database
 `fixflow`. It supplies disposable test credentials through both `DB_PASSWORD`
 and Spring datasource environment variables. Its service health check waits
-for PostgreSQL. CI verifies that isolated environment, not the developer's
-existing database or locally installed PostgreSQL version. The workflow runs
-for pushes to main and pull requests targeting main; it is unchanged by FF-01.
+for PostgreSQL. FF-02 tests now use their own disposable PostgreSQL 17 container
+rather than this pre-existing service. CI does not verify the developer's existing database
+or locally installed PostgreSQL version. The workflow runs
+for pushes to main and pull requests targeting main; it is unchanged by FF-02.
