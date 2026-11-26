@@ -120,6 +120,10 @@ GET/list/history visibility to owners, ADMIN, or currently assigned TECHNICIANs;
 see [request API contracts](maintenance-requests.md).
 FF-07 adds explicit ADMIN-only PATCH workflow routes and a privileged status-history
 GET under `/api/admin/maintenance-requests/{id}`; see [workflow contracts](admin-workflow.md).
+FF-08 adds [technician onboarding and work routes](technician-workflow.md).
+Technician deactivation/suspension increments a persisted token version; old
+tokens remain revoked after reactivation. Suspended pending accounts cannot
+use OTP verification/resend to bypass an administrative decision.
 All other HTTP paths and methods are denied by default. CORS permits only configured origins and
 Authorization/Content-Type headers; credentials/cookies are disabled. The API
 is stateless and accepts bearer tokens rather than session cookies, so CSRF,
@@ -135,9 +139,9 @@ are denied. FF-06 HTTP reads conceal missing/inaccessible requests with 404.
 New endpoints need an explicit filter-chain rule as well as their service's
 role/ownership check. Do not broadly open `/api/**`.
 
-There is no public ADMIN/TECHNICIAN provisioning route. Any future provisioning
-service must require `hasRole('ADMIN')` and normalize identifiers consistently;
-FF-04 does not add an initial-admin bootstrap or user-management feature.
+There is no public ADMIN/TECHNICIAN provisioning route. FF-08 provides ADMIN-only
+technician provisioning using existing registration/OTP rules. Initial-admin
+bootstrap and generic user management remain outside scope.
 Role and ownership checks are tested with secured test-only methods.
 
 ## Environment and local email

@@ -56,6 +56,7 @@ public class SecurityConfig {
         OAuth2TokenValidator<Jwt> claims = jwt -> {
             var now = clock.instant();
             boolean valid = jwt.getAudience() != null && jwt.getAudience().contains(settings.getAudience())
+                    && validTokenVersion(jwt)
                     && validSubject(jwt.getSubject())
                     && jwt.getIssuedAt() != null && !jwt.getIssuedAt().isAfter(now)
                     && jwt.getExpiresAt() != null && now.isBefore(jwt.getExpiresAt()) && jwt.getIssuedAt() != null
@@ -74,6 +75,10 @@ public class SecurityConfig {
         if (subject == null || !subject.matches("[1-9][0-9]*")) return false;
         try { return Long.parseLong(subject) > 0; }
         catch (NumberFormatException e) { return false; }
+    }
+    private boolean validTokenVersion(Jwt jwt) {
+        Object value=jwt.getClaim("tokenVersion");
+        return value==null || value instanceof Number number && number.longValue()>=0 && number.doubleValue()==number.longValue();
     }
     @Bean SecurityFilterChain apiSecurity(HttpSecurity http, JwtDecoder decoder, UserRepository users,
                                           AuthSettings settings, AuthRateLimiter limiter) throws Exception {
@@ -104,6 +109,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/admin/maintenance-requests/{id}/verification",
                                 "/api/admin/maintenance-requests/{id}/priority", "/api/admin/maintenance-requests/{id}/status").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/admin/maintenance-requests/{id}/history").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST,"/api/admin/technicians","/api/admin/maintenance-requests/{id}/assignments").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/api/admin/technicians/{id}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/admin/maintenance-requests/{id}/assignment").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/admin/technicians","/api/admin/technicians/{id}","/api/admin/technicians/{id}/workload","/api/admin/maintenance-requests/{id}/assignments").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,"/api/maintenance-requests/{id}/assignment").hasAnyRole("ADMIN","TECHNICIAN")
+                        .requestMatchers(HttpMethod.GET,"/api/technician/workload").hasRole("TECHNICIAN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/technician/maintenance-requests/{id}/accept","/api/technician/maintenance-requests/{id}/start",
+                                "/api/technician/maintenance-requests/{id}/hold","/api/technician/maintenance-requests/{id}/resume",
+                                "/api/technician/maintenance-requests/{id}/progress","/api/technician/maintenance-requests/{id}/resolve").hasRole("TECHNICIAN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/maintenance-requests/{id}/confirmation","/api/maintenance-requests/{id}/reopening").hasRole("REPORTER")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint((req, res, ex) -> {
@@ -115,7 +130,9 @@ public class SecurityConfig {
                             // Recheck account status and role on every request. Disabling users takes immediate effect.
                             var user = users.findById(Long.valueOf(jwt.getSubject())).orElseThrow(
                                     () -> new BadCredentialsException("Invalid account"));
-                            if (!user.isEnabled() || !user.isEmailVerified()
+                            Number tokenVersion=jwt.getClaim("tokenVersion");
+                            if((tokenVersion==null?0L:tokenVersion.longValue())!=user.getTokenVersion()) throw new BadCredentialsException("Invalid account");
+                            if (!user.isEnabled() || !user.isEmailVerified() || user.isAdministrativelyDisabled()
                                     || !user.getRole().getName().equals(jwt.getClaimAsString("role")))
                                 throw new BadCredentialsException("Invalid account");
                             var principal = AccountPrincipal.from(user);

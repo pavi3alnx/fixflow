@@ -36,6 +36,16 @@ public class AuthService {
 
     @Transactional
     public void register(Registration input) {
+        createPending(input, "REPORTER", true);
+    }
+
+    @Transactional
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public com.fixflow.backend.auth.AuthContracts.UserResponse provisionTechnician(Registration input) {
+        return com.fixflow.backend.auth.AuthContracts.UserResponse.from(createPending(input, "TECHNICIAN", false));
+    }
+
+    private User createPending(Registration input, String role, boolean genericDuplicate) {
         String email = normalizeEmail(input.email());
         String domain = email.substring(email.lastIndexOf('@') + 1);
         if (settings.getUniversityDomains().stream().noneMatch(d -> d.strip().equalsIgnoreCase(domain)))
@@ -43,20 +53,24 @@ public class AuthService {
         if (input.password().getBytes(StandardCharsets.UTF_8).length > 72)
             throw new AuthProblem(HttpStatus.BAD_REQUEST, "Password must not exceed 72 UTF-8 bytes.");
         String passwordHash = passwords.encode(input.password());
-        if (users.existsByEmail(email) || users.existsByStudentStaffId(input.studentStaffId().strip())) return;
+        if (users.existsByEmail(email) || users.existsByStudentStaffId(input.studentStaffId().strip())) {
+            if (genericDuplicate) return null;
+            throw new com.fixflow.backend.common.api.ConflictException("Email or student/staff ID already exists.");
+        }
         var user = new User();
         user.setFullName(input.fullName().strip()); user.setEmail(email);
         user.setStudentStaffId(input.studentStaffId().strip()); user.setDepartment(input.department().strip());
         user.setPasswordHash(passwordHash);
-        user.setRole(roles.findByName("REPORTER").orElseThrow());
+        user.setRole(roles.findByName(role).orElseThrow());
         users.saveAndFlush(user);
         issue(user);
+        return user;
     }
 
     @Transactional
     public void resend(String address) {
         var user = users.lockByEmail(normalizeEmail(address)).orElse(null);
-        if (user == null || user.isEmailVerified()) return;
+        if (user == null || user.isEmailVerified() || user.isAdministrativelyDisabled()) return;
         var previous = verifications.findFirstByUserIdOrderByCreatedAtDescIdDesc(user.getId()).orElse(null);
         if (previous != null && clock.instant().isBefore(previous.getResendAvailableAt())) return;
         issue(user);
@@ -70,7 +84,7 @@ public class AuthService {
         var token = verifications.findFirstByUserIdOrderByCreatedAtDescIdDesc(user.getId())
                 .orElseThrow(AuthProblem::invalidOtp);
         var now = clock.instant();
-        if (user.isEmailVerified() || token.getConsumedAt() != null || token.getInvalidatedAt() != null
+        if (user.isEmailVerified() || user.isAdministrativelyDisabled() || token.getConsumedAt() != null || token.getInvalidatedAt() != null
                 || !now.isBefore(token.getExpiresAt()) || token.getAttemptCount() >= token.getMaxAttempts())
             throw AuthProblem.invalidOtp();
         token.setAttemptCount(token.getAttemptCount() + 1);

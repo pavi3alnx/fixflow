@@ -2,12 +2,10 @@ package com.fixflow.backend.request;
 
 import com.fixflow.backend.assignment.*;
 import com.fixflow.backend.common.api.*;
-import com.fixflow.backend.identity.UserRepository;
 import com.fixflow.backend.request.AdminWorkflowContracts.*;
 import java.time.Instant;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +16,11 @@ public class AdminRequestWorkflowService {
     private final MaintenanceRequestRepository requests;
     private final StatusHistoryRepository history;
     private final AssignmentRepository assignments;
-    private final UserRepository users;
+    private final RequestWorkflowWriter writer;
     public AdminRequestWorkflowService(MaintenanceRequestRepository requests, StatusHistoryRepository history,
-                                        AssignmentRepository assignments, UserRepository users) {
-        this.requests = requests; this.history = history; this.assignments = assignments; this.users = users;
+                                        AssignmentRepository assignments, RequestWorkflowWriter writer) {
+        this.requests = requests; this.history = history; this.assignments = assignments;
+        this.writer = writer;
     }
     @Transactional
     public RequestResponse verify(long id, Transition input) {
@@ -54,22 +53,13 @@ public class AdminRequestWorkflowService {
                 .map(AuditEntry::from));
     }
     private MaintenanceRequest locked(long id, Instant expected) {
-        var request = requests.lockById(id).orElseThrow(ResourceNotFoundException::new);
-        if (!request.getUpdatedAt().equals(expected))
-            throw new ConflictException("The request has changed. Reload it and retry with its current updatedAt.");
-        return request;
+        return writer.locked(id, expected);
     }
     private RequestResponse transition(MaintenanceRequest request, Transition input) {
         RequestWorkflowPolicy.validate(request.getStatus(), input.status(), input.reason(),
                 assignments.existsByRequestIdAndEndedAtIsNull(request.getId()),
-                assignments.existsByRequestIdAndEndReasonAndResolvedAtIsNotNull(request.getId(), AssignmentEndReason.RESOLVED));
-        var previous = request.getStatus(); request.setStatus(input.status());
-        requests.flush(); // Generates the monotonic, database-precision update timestamp within this transaction.
-        var entry = new StatusHistory(); entry.setRequest(request); entry.setPreviousStatus(previous);
-        entry.setNewStatus(input.status()); entry.setReason(input.reason());
-        entry.setChangedBy(users.getReferenceById(Long.valueOf(SecurityContextHolder.getContext().getAuthentication().getName())));
-        entry.setChangedAt(request.getUpdatedAt());
-        history.saveAndFlush(entry);
+                assignments.hasLatestResolution(request.getId()));
+        writer.transition(request, input.status(), input.reason());
         return RequestResponse.from(request);
     }
 }

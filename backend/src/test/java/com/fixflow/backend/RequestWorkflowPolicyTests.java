@@ -7,6 +7,26 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RequestWorkflowPolicyTests {
+    @Test void assignmentAndReporterOperationsUseTheirOwnCentralizedPolicies() {
+        for(var status:RequestStatus.values()) {
+            if(status==RequestStatus.VERIFIED) assertDoesNotThrow(()->RequestWorkflowPolicy.validateAssignment(status,false));
+            else assertThrows(ConflictException.class,()->RequestWorkflowPolicy.validateAssignment(status,false));
+            if(Set.of(RequestStatus.ASSIGNED,RequestStatus.IN_PROGRESS,RequestStatus.ON_HOLD).contains(status))
+                assertDoesNotThrow(()->RequestWorkflowPolicy.validateAssignment(status,true));
+            else assertThrows(ConflictException.class,()->RequestWorkflowPolicy.validateAssignment(status,true));
+            for(var target:Set.of(RequestStatus.CONFIRMED,RequestStatus.REOPENED)) {
+                if(status==RequestStatus.RESOLVED) assertDoesNotThrow(()->RequestWorkflowPolicy.validateReporter(status,target));
+                else assertThrows(ConflictException.class,()->RequestWorkflowPolicy.validateReporter(status,target));
+            }
+        }
+    }
+    @Test void allTechnicianWorkEdgesAreExplicitAndCannotSkipAssignmentOrResolution() {
+        var permitted=Set.of("ASSIGNED:IN_PROGRESS","IN_PROGRESS:ON_HOLD","ON_HOLD:IN_PROGRESS","IN_PROGRESS:RESOLVED");
+        for(var from:RequestStatus.values()) for(var to:RequestStatus.values()) {
+            if(permitted.contains(from+":"+to)) assertDoesNotThrow(()->RequestWorkflowPolicy.validateWork(from,to));
+            else assertThrows(ConflictException.class,()->RequestWorkflowPolicy.validateWork(from,to));
+        }
+    }
     @Test void everyStatusPairHasAnExplicitAllowOrDenyDecision() {
         var allowed = Set.of("OPEN:VERIFIED", "OPEN:REJECTED", "RESOLVED:REOPENED", "REOPENED:VERIFIED", "CONFIRMED:CLOSED");
         for (var from : RequestStatus.values()) for (var to : RequestStatus.values()) {

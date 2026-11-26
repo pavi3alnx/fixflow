@@ -7,6 +7,19 @@ import static com.fixflow.backend.request.RequestStatus.*;
 
 /** FF-07 administrative transitions only. Assignment/work/confirmation actions need their own use cases. */
 public final class RequestWorkflowPolicy {
+    public static void validateAssignment(RequestStatus status, boolean reassignment) {
+        boolean valid = reassignment ? Set.of(ASSIGNED, IN_PROGRESS, ON_HOLD).contains(status) : status == VERIFIED;
+        if (!valid) throw new ConflictException("The request is not eligible for this assignment operation.");
+    }
+    public static void validateWork(RequestStatus from, RequestStatus to) {
+        boolean valid = from == ASSIGNED && to == IN_PROGRESS || from == IN_PROGRESS && (to == ON_HOLD || to == RESOLVED)
+                || from == ON_HOLD && to == IN_PROGRESS;
+        if (!valid) throw new ConflictException("This technician work transition is not permitted.");
+    }
+    public static void validateReporter(RequestStatus from, RequestStatus to) {
+        if (from != RESOLVED || (to != CONFIRMED && to != REOPENED))
+            throw new ConflictException("Only a resolved request can be confirmed or reopened.");
+    }
     private RequestWorkflowPolicy() { }
     private static final Map<RequestStatus, Set<RequestStatus>> ADMIN_TRANSITIONS = Map.of(
             OPEN, Set.of(VERIFIED, REJECTED), RESOLVED, Set.of(REOPENED),

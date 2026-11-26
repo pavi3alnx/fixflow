@@ -18,8 +18,9 @@ All endpoints require an enabled, verified account with a valid bearer JWT.
 | `GET /api/maintenance-requests/{id}/history` | Paginated chronological status history; 200 | Same visibility as details |
 | `PUT /api/maintenance-requests/{id}` | Replace editable fields; 200 | Owning REPORTER, OPEN status only |
 
-There is no duplicate `/my` endpoint, DELETE endpoint, public status-change
-endpoint, admin content edit route, or assignment API. Other paths and methods remain denied.
+There is no duplicate `/my` endpoint, DELETE endpoint, arbitrary public status-change
+endpoint or admin content edit route. FF-08 adds dedicated [assignment/work and
+reporter decision APIs](technician-workflow.md). Other paths and methods remain denied.
 FF-07 adds a separate [ADMIN workflow](admin-workflow.md) for review decisions,
 administrative priority changes and supported status transitions. TECHNICIAN cannot
 submit/edit requests or browse unassigned requests. Current assignment access
@@ -191,5 +192,6 @@ tests remain part of final verification. No real SMTP or production secrets
 are required.
 
 FF-07 implements supported [administrative status operations](admin-workflow.md).
-Assignment/resolution, comments, photos, notifications, dashboards and ML
-prediction remain deferred to their respective issues.
+FF-08 implements assignment/resolution and reporter confirmation/reopening.
+Comments, photo uploads, notifications, dashboards and ML prediction remain
+deferred to their respective issues.

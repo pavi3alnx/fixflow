@@ -74,25 +74,26 @@ evidence cannot be advanced. FF-07 does not create, finish or invalidate
 assignment episodes. Reopening is an ADMIN review action; reassessment returns
 to VERIFIED rather than bypassing a fresh assignment.
 
-The remainder of Issue #7's lifecycle is explicitly reserved:
+The following lifecycle edges are now implemented by [FF-08 dedicated use cases](technician-workflow.md),
+while the generic ADMIN status endpoint continues to reject them:
 
 | Transition | Responsible action / status |
 | --- | --- |
 | VERIFIED → ASSIGNED | ADMIN assignment operation, FF-08; must create an assignment |
 | ASSIGNED → IN_PROGRESS | Assigned TECHNICIAN work operation, FF-08 |
 | IN_PROGRESS → RESOLVED | Assigned TECHNICIAN resolution operation, FF-08; must record/finish repair episode |
-| IN_PROGRESS → ON_HOLD | Assigned TECHNICIAN hold operation, deferred to FF-08; reason required |
-| ON_HOLD → IN_PROGRESS | Assigned TECHNICIAN resume operation, deferred to FF-08; retain current assignment |
-| RESOLVED → CONFIRMED | Owning REPORTER confirmation action; separate future lifecycle use case, not an admin override |
+| IN_PROGRESS → ON_HOLD | Assigned TECHNICIAN hold operation, FF-08; reason required |
+| ON_HOLD → IN_PROGRESS | Assigned TECHNICIAN resume operation, FF-08; retain current assignment |
+| RESOLVED → CONFIRMED | Owning REPORTER confirmation action, FF-08; not an admin override |
 
 Reserved edges are denied by FF-07's generic status endpoint even when an
 assignment exists. No workflow can skip verification. CLOSED and REJECTED are
 terminal. Cancellation has no separate enum or endpoint: an ADMIN may decline
 an OPEN request via reasoned REJECTED; reporters cannot silently delete/cancel
 submitted records. No reopening from CLOSED/REJECTED is permitted. These are
-explicit rules, not newly invented status names. Reporter confirmation and
-assignment/work actions require their future use cases before the full
-primary lifecycle is executable.
+explicit rules, not newly invented status names. FF-08's dedicated confirmation
+and assignment/work actions complete the primary lifecycle without broadening
+the generic ADMIN endpoint.
 
 ## Priority, listings and audit
 

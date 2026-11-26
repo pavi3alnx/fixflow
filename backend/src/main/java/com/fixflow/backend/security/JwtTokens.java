@@ -21,7 +21,7 @@ public class JwtTokens {
         var now = clock.instant();
         var claims = JwtClaimsSet.builder().issuer(settings.getIssuer()).audience(List.of(settings.getAudience()))
                 .subject(user.getId().toString()).issuedAt(now).expiresAt(now.plus(settings.getAccessTokenTtl()))
-                .claim("role", user.getRole().getName()).build();
+                .claim("role", user.getRole().getName()).claim("tokenVersion",user.getTokenVersion()).build();
         String token = encoder.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).type("JWT").build(), claims)).getTokenValue();
         return new TokenResponse(token, "Bearer", settings.getAccessTokenTtl().toSeconds(), UserResponse.from(user));

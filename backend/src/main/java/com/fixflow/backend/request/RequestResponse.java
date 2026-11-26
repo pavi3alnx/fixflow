@@ -7,7 +7,7 @@ public record RequestResponse(Long id, Long reporterId, String title, String des
                               Priority suggestedPriority, Priority priority, RequestStatus status,
                               Instant createdAt, Instant updatedAt) {
     public record Reference(Long id, String code, String name, boolean active) { }
-    static RequestResponse from(MaintenanceRequest request) {
+    public static RequestResponse from(MaintenanceRequest request) {
         var building = request.getBuilding(); var room = request.getRoom(); var category = request.getCategory();
         return new RequestResponse(request.getId(), request.getReporter().getId(), request.getTitle(), request.getDescription(),
                 new Reference(building.getId(), building.getCode(), building.getName(), building.isActive()),
