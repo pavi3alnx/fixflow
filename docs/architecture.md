@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-03)
+## Current foundation (FF-01 through FF-04)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -14,7 +14,9 @@ FF-03 maps all 12 domain tables and supplies Spring Data repositories in
 errors. The representative `GET /api/categories/{id}` follows controller to
 transactional service to repository and returns a public response DTO.
 `RequestDetails` demonstrates Bean Validation without implementing submission.
-Authentication and request transitions remain outside this foundation. Existing databases require reviewed explicit
+FF-04 implements registration, email OTP verification, login, JWT authentication,
+and role/ownership authorization foundations; see [authentication and API contracts](authentication.md).
+Request transitions remain outside this foundation. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
@@ -53,8 +55,9 @@ Open-in-view is disabled; HTTP responses never expose entities or secret hashes.
 | TECHNICIAN | Work assigned requests, record progress and work notes, and propose resolution. |
 | ADMIN | Verify or reject submissions, assign technicians, manage users and operational oversight. |
 
-Authentication, enforcement, visibility rules, and the precise permissions for
-each transition remain future implementation work.
+FF-04 enforces authenticated role access and supplies an ownership guard for
+future private request services. Precise permissions for each transition and
+the request API remain future implementation work.
 
 ## Request lifecycle (planned)
 
@@ -102,6 +105,10 @@ cd C:\Users\hp\Downloads\filxflow\backend
 .\mvnw.cmd spring-boot:run
 ```
 
+Before `spring-boot:run`, also supply the required JWT/OTP keys, approved university
+domains and SMTP settings listed in [authentication configuration](authentication.md).
+Automated tests use their explicit test profile and require none of these real secrets.
+
 On Windows PowerShell 5.1, use an appropriate private environment-variable
 setup or a secure prompt conversion; `-MaskInput` requires PowerShell 7.
 Environment variables keep credentials out of source control and let each
@@ -140,8 +147,9 @@ configuration as the application evolves.
 
 Successful startup should report Tomcat on port 8081 and a successful Hikari
 PostgreSQL connection with Hibernate database information identifying the
-`fixflow` JDBC URL. A listening port or a 404 at `/` alone does not prove
-database connectivity; a root 404 is expected because there is no root route.
+`fixflow` JDBC URL. A listening port or an HTTP response alone does not prove
+database connectivity. FF-04 denies unspecified routes, including `/`;
+unauthenticated requests receive 401 rather than the earlier foundation's 404.
 Automated tests override the datasource with disposable Testcontainers databases;
 they require Docker and do not use the local database or DB_PASSWORD. The default
 PostgreSQL image is 17; see the migration guide for verification against 18.
