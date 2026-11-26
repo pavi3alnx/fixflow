@@ -97,6 +97,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/buildings", "/api/rooms", "/api/categories").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/buildings/{id}", "/api/rooms/{id}", "/api/categories/{id}")
                             .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/maintenance-requests").hasRole("REPORTER")
+                        .requestMatchers(HttpMethod.PUT, "/api/maintenance-requests/{id}").hasRole("REPORTER")
+                        .requestMatchers(HttpMethod.GET, "/api/maintenance-requests", "/api/maintenance-requests/{id}",
+                                "/api/maintenance-requests/{id}/history").hasAnyRole("REPORTER", "ADMIN", "TECHNICIAN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint((req, res, ex) -> {
