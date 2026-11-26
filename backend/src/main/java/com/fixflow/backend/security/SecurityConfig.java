@@ -91,8 +91,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/verify-email",
                                 "/api/auth/resend-otp", "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/me", "/api/categories/{id}")
+                        .requestMatchers(HttpMethod.GET, "/api/auth/me", "/api/categories", "/api/categories/{id}",
+                                "/api/buildings", "/api/buildings/{id}", "/api/rooms", "/api/rooms/{id}")
                             .hasAnyRole("REPORTER", "TECHNICIAN", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/buildings", "/api/rooms", "/api/categories").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/buildings/{id}", "/api/rooms/{id}", "/api/categories/{id}")
+                            .hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint((req, res, ex) -> {
