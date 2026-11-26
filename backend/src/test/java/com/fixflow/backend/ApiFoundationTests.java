@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
@@ -18,6 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = CategoryController.class)
+@org.springframework.test.context.ActiveProfiles("test")
+@AutoConfigureMockMvc(addFilters = false) // FF-03 MVC contracts; real security is covered by AuthIntegrationTests.
 @Import({ApiExceptionHandler.class, ApiFoundationTests.ContractController.class})
 class ApiFoundationTests {
     @Autowired MockMvc mvc;

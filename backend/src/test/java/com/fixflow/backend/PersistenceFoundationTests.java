@@ -15,6 +15,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 class PersistenceFoundationTests {
     private static final TestDatabase DATABASE = database();
     private static TestDatabase database() {

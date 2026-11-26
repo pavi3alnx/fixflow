@@ -6,6 +6,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 class BackendApplicationTests {
     private static final TestDatabase DATABASE = database();
     private static TestDatabase database() {

@@ -11,6 +11,14 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(com.fixflow.backend.auth.AuthProblem.class)
+    public ProblemDetail authentication(com.fixflow.backend.auth.AuthProblem e) {
+        return ProblemDetail.forStatusAndDetail(e.status(), e.getMessage());
+    }
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ProblemDetail denied(Exception e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access is denied.");
+    }
     @ExceptionHandler(ResourceNotFoundException.class)
     public ProblemDetail missing(ResourceNotFoundException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "The requested resource was not found.");
