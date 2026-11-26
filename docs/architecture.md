@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 and FF-02)
+## Current foundation (FF-01 through FF-03)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -8,8 +8,13 @@ test, and focused database migration tests. Maven dependencies provide Spring
 MVC, validation, Spring Data JPA, the PostgreSQL driver, Lombok, Flyway, and test
 support. FF-02 adds seven versioned SQL migrations for the 12 domain tables;
 see [the ER diagram](er-diagram.md) and [migration procedure](database-migrations.md).
-There are no feature entities, repositories, controllers, authentication, or
-implemented request transitions. Existing databases require reviewed explicit
+FF-03 maps all 12 domain tables and supplies Spring Data repositories in
+`identity`, `location`, `category`, `request`, `assignment`, `comment`,
+`attachment`, and `notification`. `common.api` owns sanitized ProblemDetail
+errors. The representative `GET /api/categories/{id}` follows controller to
+transactional service to repository and returns a public response DTO.
+`RequestDetails` demonstrates Bean Validation without implementing submission.
+Authentication and request transitions remain outside this foundation. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
@@ -19,11 +24,11 @@ recommendations. ML is optional for request submission: submitting a request
 must remain possible when ML is unavailable. These components and integration
 rules are planned, not implemented here.
 
-## Package and layer conventions (planned)
+## Package and layer conventions
 
 Organize code by business feature under `com.fixflow.backend`, for example
-`request`, `user`, and `assignment`. Within each feature, use `controller`,
-`service`, `repository`, `entity`, and `dto` packages as needed. Keep genuinely
+`request`, `identity`, and `assignment`. Small features keep their classes
+together; introduce layer subpackages within a feature as its size warrants. Keep genuinely
 shared configuration and infrastructure outside feature packages; avoid a
 single application-wide folder for every controller or service.
 
@@ -35,9 +40,10 @@ single application-wide folder for every controller or service.
 | Entity | Represent persistent domain state and database mappings. |
 | DTO | Define explicit input/output contracts without exposing persistence entities. |
 
-A typical future request travels from controller through service to repository
+A request travels from controller through service to repository
 and PostgreSQL, with response DTOs returned to the client. Controllers should
-not query repositories directly. Schema and entity work belongs to later issues.
+not query repositories directly. Services own transactions and map entities to DTOs before returning to controllers.
+Open-in-view is disabled; HTTP responses never expose entities or secret hashes.
 
 ## Roles (planned)
 
@@ -112,7 +118,8 @@ by the wrapper; confirm its Java version with `mvnw.cmd -v`.
 ## Verification and database safety
 
 Flyway now owns schema changes on application startup. Automatic baselining
-and clean are disabled; Hibernate DDL and Spring SQL initialization are disabled.
+and clean are disabled; Hibernate validates the migrated schema (`ddl-auto=validate`)
+without generating DDL. Spring SQL initialization is disabled.
 Follow the [existing-database adoption procedure](database-migrations.md) before
 starting against an existing schema. Hibernate/SQL-init settings alone do not
 prevent Flyway migrations. For a connectivity-only run that must not migrate,
@@ -147,3 +154,26 @@ for PostgreSQL. FF-02 tests now use their own disposable PostgreSQL 17 container
 rather than this pre-existing service. CI does not verify the developer's existing database
 or locally installed PostgreSQL version. The workflow runs
 for pushes to main and pull requests targeting main; it is unchanged by FF-02.
+
+## FF-03 persistence conventions
+
+All IDs use identity generation and relationships are unidirectional lazy
+many-to-one references without cascading deletes. Enums are stored by name.
+The required request building writes `building_id` once; the optional room
+writes only `room_id`. PostgreSQL's existing composite foreign key enforces that
+the room belongs to the building, including after updates.
+
+Identity user timestamps use `LocalDateTime` for V1's timestamp without time
+zone; other timestamp columns use `Instant` for timestamptz. Entity initializers
+supply the migration defaults when JPA explicitly inserts those columns
+(false flags, active=true, OPEN status, zero attempts, and current timestamps).
+`@PreUpdate` refreshes `updated_at` on managed entity updates. Bulk/native writes
+must manage timestamps explicitly. Database defaults still apply to inserts
+that omit the columns. Historical rows have no cascade-removal mapping.
+
+`PersistenceFoundationTests` reuses FF-02's disposable TestDatabase to validate
+the schema, query a seeded category, round-trip both request location forms,
+and verify transaction rollback. `ApiFoundationTests` exercises DTO validation,
+public DTO responses, malformed input, and sanitized 400/404/409 errors through
+MockMvc. Its POST controller exists only in test sources. Run from `backend`:
+`.\mvnw.cmd -B clean verify` with Docker available. V1-V7 remain unchanged.
