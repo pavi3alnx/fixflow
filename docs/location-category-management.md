@@ -107,8 +107,9 @@ ADMIN room `active` filtering refers to the stored room flag, so an active
 room under an inactive building may appear with `available: false`. REPORTER
 and TECHNICIAN queries always require both room and parent to be active.
 Filter results and counts apply the same visibility rules. This supplies
-selectable options for future request forms; FF-06 must also validate active
-state transactionally at submission, rather than trusting frontend lists.
+selectable options for request forms; [FF-06](maintenance-requests.md) also
+validates active state transactionally under catalog row locks at submission,
+rather than trusting frontend lists.
 
 ## Integrity and lifecycle decisions
 

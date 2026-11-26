@@ -115,18 +115,21 @@ Only the four explicit POST authentication endpoints are public. `me` and
 FF-05 building/room/category GET endpoints accept REPORTER, TECHNICIAN or ADMIN;
 catalog POST/PUT endpoints require ADMIN. Non-admin catalog visibility is
 restricted to active/selectable records. See [FF-05 contracts](location-category-management.md).
+FF-06 permits REPORTER request submission/OPEN edits and scopes request
+GET/list/history visibility to owners, ADMIN, or currently assigned TECHNICIANs;
+see [request API contracts](maintenance-requests.md).
 All other HTTP paths and methods are denied by default. CORS permits only configured origins and
 Authorization/Content-Type headers; credentials/cookies are disabled. The API
 is stateless and accepts bearer tokens rather than session cookies, so CSRF,
 form login, HTTP Basic and server-session logout are disabled.
 
-Method security is enabled. Future request services must use
-`@PreAuthorize("@requestAccess.canRead(authentication, #requestId)")` before
-loading/returning private data. The guard allows an ADMIN to read an existing
-request, its REPORTER owner, or a TECHNICIAN with a current assignment. Other
-reporters, unassigned technicians, anonymous users and missing requests are
-denied. Integration tests exercise this via a test-only secured service;
-FF-05 request endpoints and transitions are deliberately not implemented.
+Method security is enabled. FF-06 uses `RequestAccess.scope(authentication)`
+inside detail/list/history queries so filtering and totals share one policy.
+`@PreAuthorize("@requestAccess.canRead(authentication, #requestId)")` remains
+available for future method guards. The policy allows an ADMIN to read an
+existing request, its REPORTER owner, or a TECHNICIAN with a current assignment.
+Other reporters, unassigned technicians, anonymous users and missing requests
+are denied. FF-06 HTTP reads conceal missing/inaccessible requests with 404.
 New endpoints need an explicit filter-chain rule as well as their service's
 role/ownership check. Do not broadly open `/api/**`.
 

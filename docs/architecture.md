@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-05)
+## Current foundation (FF-01 through FF-06)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -13,12 +13,14 @@ FF-03 maps all 12 domain tables and supplies Spring Data repositories in
 `attachment`, and `notification`. `common.api` owns sanitized ProblemDetail
 errors. The representative `GET /api/categories/{id}` follows controller to
 transactional service to repository and returns a public response DTO.
-`RequestDetails` demonstrates Bean Validation without implementing submission.
+`RequestDetails` supplies validated reporter input for FF-06 submission and edits.
 FF-04 implements registration, email OTP verification, login, JWT authentication,
 and role/ownership authorization foundations; see [authentication and API contracts](authentication.md).
 FF-05 extends `location` and `category` with ADMIN management APIs and paginated,
 active-only reads for REPORTER/TECHNICIAN; see [location/category API contracts](location-category-management.md).
-Request transitions remain outside this foundation. Existing databases require reviewed explicit
+FF-06 adds reporter submission/OPEN edits, scoped tracking APIs, and atomic
+initial status history; see [maintenance request API contracts](maintenance-requests.md).
+Administrative request transitions remain outside this foundation. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
@@ -57,9 +59,9 @@ Open-in-view is disabled; HTTP responses never expose entities or secret hashes.
 | TECHNICIAN | Work assigned requests, record progress and work notes, and propose resolution. |
 | ADMIN | Verify or reject submissions, assign technicians, manage users and operational oversight. |
 
-FF-04 enforces authenticated role access and supplies an ownership guard for
-future private request services. Precise permissions for each transition and
-the request API remain future implementation work.
+FF-04 enforces authenticated role access. FF-06 applies its shared ownership
+policy to request details, lists and history: REPORTER owns, ADMIN reviews,
+and TECHNICIAN reads current assignments. Workflow transitions remain future work.
 
 ## Request lifecycle (planned)
 
@@ -84,7 +86,8 @@ Proposed branches, subject to design decisions:
   returns to VERIFIED, ASSIGNED, or IN_PROGRESS are undecided.
 
 Confirmation requirements, automatic closure, reassignment, and audit/reason
-requirements are design decisions. None of these transitions is implemented.
+requirements are design decisions. FF-06 records initial creation as OPEN;
+none of the later transitions is implemented.
 
 ## Local prerequisites and configuration
 
