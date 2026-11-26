@@ -18,10 +18,10 @@ All endpoints require an enabled, verified account with a valid bearer JWT.
 | `GET /api/maintenance-requests/{id}/history` | Paginated chronological status history; 200 | Same visibility as details |
 | `PUT /api/maintenance-requests/{id}` | Replace editable fields; 200 | Owning REPORTER, OPEN status only |
 
-There is no duplicate `/my` endpoint, DELETE endpoint, status-change endpoint,
-admin edit route, or assignment API. Other paths and methods remain denied.
-ADMIN can retrieve requests for review, but review decisions, administrative
-priority changes and status transitions belong to FF-07. TECHNICIAN cannot
+There is no duplicate `/my` endpoint, DELETE endpoint, public status-change
+endpoint, admin content edit route, or assignment API. Other paths and methods remain denied.
+FF-07 adds a separate [ADMIN workflow](admin-workflow.md) for review decisions,
+administrative priority changes and supported status transitions. TECHNICIAN cannot
 submit/edit requests or browse unassigned requests. Current assignment access
 uses the existing `ended_at IS NULL` rule; assignment creation remains FF-08.
 
@@ -64,7 +64,7 @@ The existing PostgreSQL identity ID is the unique request identifier. No
 separate human-readable reference is required by the issue or schema, so no
 count-based reference generator or new column is introduced. Creation starts
 at `OPEN`. Administrative priority is server-initialized to `MEDIUM`,
-independent of the reporter's suggestion, until the future review workflow.
+independent of the reporter's suggestion, until an ADMIN changes it through FF-07.
 Creation and update timestamps initially match. Creation uses the shared UTC
 clock at PostgreSQL microsecond precision; managed edits use the established
 entity `@PreUpdate` timestamp convention.
@@ -117,6 +117,7 @@ The response uses the existing stable `PageResponse` shape:
 | `size` | Default 20, range 1–100 |
 | `search` | Case-insensitive literal substring of title or description; maximum 100 characters |
 | `status` | One of the existing RequestStatus names, e.g. `OPEN`, `VERIFIED`, `CLOSED` |
+| `priority` | Optional official priority: LOW, MEDIUM, HIGH, URGENT (added in FF-07) |
 | `buildingId`, `categoryId` | Optional positive IDs; unknown positive IDs yield empty results |
 | `submittedFrom` | Inclusive creation-time lower bound, ISO-8601 instant |
 | `submittedTo` | Exclusive creation-time upper bound, ISO-8601 instant |
@@ -189,5 +190,6 @@ historical reads and bounded SQL query counts. Existing FF-01 through FF-05
 tests remain part of final verification. No real SMTP or production secrets
 are required.
 
-Status administration, assignment/resolution, comments, photos, notifications,
-dashboards and ML prediction remain deferred to their respective issues.
+FF-07 implements supported [administrative status operations](admin-workflow.md).
+Assignment/resolution, comments, photos, notifications, dashboards and ML
+prediction remain deferred to their respective issues.

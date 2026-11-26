@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-06)
+## Current foundation (FF-01 through FF-07)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -20,7 +20,9 @@ FF-05 extends `location` and `category` with ADMIN management APIs and paginated
 active-only reads for REPORTER/TECHNICIAN; see [location/category API contracts](location-category-management.md).
 FF-06 adds reporter submission/OPEN edits, scoped tracking APIs, and atomic
 initial status history; see [maintenance request API contracts](maintenance-requests.md).
-Administrative request transitions remain outside this foundation. Existing databases require reviewed explicit
+FF-07 adds ADMIN verification, priority changes and guarded status transitions;
+see [administrative workflow contracts and matrix](admin-workflow.md).
+Assignment/work/confirmation operations remain deferred. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
@@ -61,7 +63,8 @@ Open-in-view is disabled; HTTP responses never expose entities or secret hashes.
 
 FF-04 enforces authenticated role access. FF-06 applies its shared ownership
 policy to request details, lists and history: REPORTER owns, ADMIN reviews,
-and TECHNICIAN reads current assignments. Workflow transitions remain future work.
+and TECHNICIAN reads current assignments. FF-07 adds ADMIN-only review/priority/status
+services with row locking, timestamp preconditions and transactional history.
 
 ## Request lifecycle (planned)
 
@@ -86,8 +89,9 @@ Proposed branches, subject to design decisions:
   returns to VERIFIED, ASSIGNED, or IN_PROGRESS are undecided.
 
 Confirmation requirements, automatic closure, reassignment, and audit/reason
-requirements are design decisions. FF-06 records initial creation as OPEN;
-none of the later transitions is implemented.
+requirements follow [the FF-07 transition matrix](admin-workflow.md). FF-06 records
+initial OPEN creation. FF-07 supports OPEN review, resolved reopening,
+reopened reassessment and confirmed closure; assignment/work/confirmation actions remain deferred.
 
 ## Local prerequisites and configuration
 

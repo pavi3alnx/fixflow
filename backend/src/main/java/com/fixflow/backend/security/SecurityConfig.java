@@ -101,6 +101,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/maintenance-requests/{id}").hasRole("REPORTER")
                         .requestMatchers(HttpMethod.GET, "/api/maintenance-requests", "/api/maintenance-requests/{id}",
                                 "/api/maintenance-requests/{id}/history").hasAnyRole("REPORTER", "ADMIN", "TECHNICIAN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/admin/maintenance-requests/{id}/verification",
+                                "/api/admin/maintenance-requests/{id}/priority", "/api/admin/maintenance-requests/{id}/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/admin/maintenance-requests/{id}/history").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint((req, res, ex) -> {

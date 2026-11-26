@@ -118,6 +118,8 @@ restricted to active/selectable records. See [FF-05 contracts](location-category
 FF-06 permits REPORTER request submission/OPEN edits and scopes request
 GET/list/history visibility to owners, ADMIN, or currently assigned TECHNICIANs;
 see [request API contracts](maintenance-requests.md).
+FF-07 adds explicit ADMIN-only PATCH workflow routes and a privileged status-history
+GET under `/api/admin/maintenance-requests/{id}`; see [workflow contracts](admin-workflow.md).
 All other HTTP paths and methods are denied by default. CORS permits only configured origins and
 Authorization/Content-Type headers; credentials/cookies are disabled. The API
 is stateless and accepts bearer tokens rather than session cookies, so CSRF,

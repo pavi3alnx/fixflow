@@ -60,5 +60,8 @@ public class MaintenanceRequest {
     private Instant updatedAt = Instant.now();
 
     @PreUpdate
-    protected void touch() { updatedAt = Instant.now(); }
+    protected void touch() {
+        var now = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        updatedAt = now.isAfter(updatedAt) ? now : updatedAt.plus(1, java.time.temporal.ChronoUnit.MICROS);
+    }
 }

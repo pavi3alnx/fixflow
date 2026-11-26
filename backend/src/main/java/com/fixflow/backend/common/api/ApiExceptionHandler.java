@@ -11,6 +11,15 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(BadRequestException.class)
+    public ProblemDetail businessValidation(BadRequestException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+    @ExceptionHandler({org.springframework.dao.PessimisticLockingFailureException.class,
+            org.springframework.dao.OptimisticLockingFailureException.class})
+    public ProblemDetail concurrentWrite(Exception e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "The request is being modified. Reload and retry.");
+    }
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail businessConflict(ConflictException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
