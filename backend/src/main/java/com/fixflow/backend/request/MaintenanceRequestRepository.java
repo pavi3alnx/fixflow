@@ -18,4 +18,8 @@ public interface MaintenanceRequestRepository extends JpaRepository<MaintenanceR
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select r from MaintenanceRequest r where r.id = :id and r.reporter.id = :reporterId")
     java.util.Optional<MaintenanceRequest> lockOwned(Long id, Long reporterId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select r from MaintenanceRequest r where r.id = :id")
+    java.util.Optional<MaintenanceRequest> lockById(Long id);
 }

@@ -18,7 +18,12 @@ public record RequestQuery(@Min(0) @Max(100000) Integer page,
                            @Positive Long categoryId,
                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant submittedFrom,
                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant submittedTo,
-                           @Size(max = 30) String sort) {
+                           @Size(max = 30) String sort,
+                           Priority priority) {
+    public RequestQuery(Integer page, Integer size, String search, RequestStatus status, Long buildingId,
+                        Long categoryId, Instant submittedFrom, Instant submittedTo, String sort) {
+        this(page, size, search, status, buildingId, categoryId, submittedFrom, submittedTo, sort, null);
+    }
     public RequestQuery {
         page = page == null ? 0 : page; size = size == null ? 20 : size;
         search = search == null ? "" : search.strip(); sort = sort == null ? "createdAt,desc" : sort;
@@ -41,6 +46,7 @@ public record RequestQuery(@Min(0) @Max(100000) Integer page,
         return (root, query, builder) -> {
             var result = builder.conjunction();
             if (status != null) result = builder.and(result, builder.equal(root.get("status"), status));
+            if (priority != null) result = builder.and(result, builder.equal(root.get("priority"), priority));
             if (buildingId != null) result = builder.and(result, builder.equal(root.get("building").get("id"), buildingId));
             if (categoryId != null) result = builder.and(result, builder.equal(root.get("category").get("id"), categoryId));
             if (submittedFrom != null) result = builder.and(result, builder.greaterThanOrEqualTo(root.get("createdAt"), submittedFrom));
