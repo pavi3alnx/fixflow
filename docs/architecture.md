@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-07)
+## Current foundation (FF-01 through FF-08)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -22,7 +22,10 @@ FF-06 adds reporter submission/OPEN edits, scoped tracking APIs, and atomic
 initial status history; see [maintenance request API contracts](maintenance-requests.md).
 FF-07 adds ADMIN verification, priority changes and guarded status transitions;
 see [administrative workflow contracts and matrix](admin-workflow.md).
-Assignment/work/confirmation operations remain deferred. Existing databases require reviewed explicit
+FF-08 completes technician onboarding, assignment/work/resolution and reporter
+confirmation/reopening; see [technician workflow](technician-workflow.md).
+V8 adds suspension/token-revocation metadata, reassignment reasons and evidence
+links. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React
@@ -91,7 +94,8 @@ Proposed branches, subject to design decisions:
 Confirmation requirements, automatic closure, reassignment, and audit/reason
 requirements follow [the FF-07 transition matrix](admin-workflow.md). FF-06 records
 initial OPEN creation. FF-07 supports OPEN review, resolved reopening,
-reopened reassessment and confirmed closure; assignment/work/confirmation actions remain deferred.
+reopened reassessment and confirmed closure. FF-08 implements assignment,
+acceptance, start, hold/resume, resolution and reporter confirmation/reopening.
 
 ## Local prerequisites and configuration
 

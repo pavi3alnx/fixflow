@@ -35,16 +35,25 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified;
 
+    @Column(name = "administratively_disabled", nullable = false)
+    private boolean administrativelyDisabled;
+
+    @Column(name="token_version",nullable=false)
+    private long tokenVersion;
+
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
     @PreUpdate
-    protected void touch() { updatedAt = LocalDateTime.now(); }
+    protected void touch() {
+        var now=LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        updatedAt=now.isAfter(updatedAt)?now:updatedAt.plus(1,java.time.temporal.ChronoUnit.MICROS);
+    }
 }

@@ -11,7 +11,7 @@ public record AccountPrincipal(Long id, String email, String passwordHash, Strin
         implements UserDetails {
     public static AccountPrincipal from(User user) {
         return new AccountPrincipal(user.getId(), user.getEmail(), user.getPasswordHash(),
-                user.getRole().getName(), user.isEnabled() && user.isEmailVerified());
+                user.getRole().getName(), user.isEnabled() && user.isEmailVerified() && !user.isAdministrativelyDisabled());
     }
     @Override public String getUsername() { return email; }
     @Override public String getPassword() { return passwordHash; }

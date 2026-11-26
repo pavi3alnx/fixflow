@@ -61,8 +61,8 @@ class DatabaseMigrationTests {
     @Test
     void freshMigrationSeedsIdentityAndIsRepeatable() throws SQLException {
         var f = flyway(null);
-        assertEquals(7, f.migrate().migrationsExecuted);
-        assertEquals(13, rows("SELECT tablename FROM pg_tables WHERE schemaname='public'").size());
+        assertEquals(8, f.migrate().migrationsExecuted);
+        assertEquals(14, rows("SELECT tablename FROM pg_tables WHERE schemaname='public'").size());
         assertEquals(List.of("1|REPORTER|", "2|TECHNICIAN|", "3|ADMIN|"), rows("SELECT id,name FROM roles ORDER BY id"));
         assertEquals(List.of("CLEANING|", "ELECTRICAL|", "FURNITURE|", "HVAC|", "NETWORK|", "OTHER|", "PLUMBING|"),
                 rows("SELECT code FROM categories ORDER BY code"));
@@ -91,7 +91,8 @@ class DatabaseMigrationTests {
             """);
         var structure = identityStructure();
         var constraints = identityConstraints();
-        var data = rows("SELECT * FROM users");
+        String originalUserColumns="id,full_name,email,student_staff_id,department,password_hash,enabled,email_verified,created_at,updated_at,role_id";
+        var data = rows("SELECT "+originalUserColumns+" FROM users");
         var sequence = rows("SELECT last_value,is_called FROM roles_id_seq");
         var userSequence = rows("SELECT last_value,is_called FROM users_id_seq");
         var sequenceDefinitions = identitySequences();
@@ -99,10 +100,19 @@ class DatabaseMigrationTests {
         var f = flyway(null);
         assertThrows(FlywayException.class, f::migrate);
         f.baseline();
-        assertEquals(6, f.migrate().migrationsExecuted);
-        assertEquals(structure, identityStructure());
-        assertEquals(constraints, identityConstraints());
-        assertEquals(data, rows("SELECT * FROM users"));
+        assertEquals(7, f.migrate().migrationsExecuted);
+        var expanded=identityStructure();
+        assertEquals(structure, expanded.stream().filter(row->!row.startsWith("users|administratively_disabled|")&&!row.startsWith("users|token_version|")).toList());
+        assertEquals(structure.size()+2,expanded.size());
+        assertEquals(List.of("boolean|NO|false|"),rows("select data_type,is_nullable,column_default from information_schema.columns where table_schema='public' and table_name='users' and column_name='administratively_disabled'"));
+        var expandedConstraints=identityConstraints();
+        assertEquals(constraints,expandedConstraints.stream().filter(row->!row.startsWith("users|users_token_version_check|")).toList());
+        assertEquals(constraints.size()+1,expandedConstraints.size());
+        assertTrue(expandedConstraints.stream().anyMatch(row->row.startsWith("users|users_token_version_check|")&&row.contains("token_version >= 0")));
+        assertEquals(data, rows("SELECT "+originalUserColumns+" FROM users"));
+        assertEquals(List.of("false|"),rows("SELECT administratively_disabled::text FROM users"));
+        assertEquals(List.of("0|"),rows("SELECT token_version FROM users"));
+        assertEquals(List.of("bigint|NO|0|"),rows("select data_type,is_nullable,column_default from information_schema.columns where table_schema='public' and table_name='users' and column_name='token_version'"));
         assertEquals(sequence, rows("SELECT last_value,is_called FROM roles_id_seq"));
         assertEquals(userSequence, rows("SELECT last_value,is_called FROM users_id_seq"));
         assertEquals(sequenceDefinitions, identitySequences());

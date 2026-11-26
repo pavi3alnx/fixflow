@@ -49,4 +49,7 @@ public class Assignment {
     @Enumerated(EnumType.STRING)
     @Column(name = "end_reason", nullable = true, length = 20)
     private AssignmentEndReason endReason;
+
+    @Column(name = "reassignment_reason", columnDefinition = "text")
+    private String reassignmentReason;
 }
