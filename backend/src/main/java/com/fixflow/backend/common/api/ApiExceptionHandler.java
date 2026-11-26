@@ -11,6 +11,10 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(ConflictException.class)
+    public ProblemDetail businessConflict(ConflictException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, e.getMessage());
+    }
     @ExceptionHandler(com.fixflow.backend.auth.AuthProblem.class)
     public ProblemDetail authentication(com.fixflow.backend.auth.AuthProblem e) {
         return ProblemDetail.forStatusAndDetail(e.status(), e.getMessage());

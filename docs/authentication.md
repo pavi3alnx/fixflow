@@ -111,9 +111,11 @@ Keep access tokens in frontend memory, use HTTPS in deployment, and avoid
 persistent browser storage where possible. Signing-key rotation invalidates
 all tokens; OTP-key rotation requires users to request new verification codes.
 
-Only the four explicit POST authentication endpoints are public. The category
-GET and `me` accept REPORTER, TECHNICIAN or ADMIN; all other HTTP paths and
-methods are denied by default. CORS permits only configured origins and
+Only the four explicit POST authentication endpoints are public. `me` and
+FF-05 building/room/category GET endpoints accept REPORTER, TECHNICIAN or ADMIN;
+catalog POST/PUT endpoints require ADMIN. Non-admin catalog visibility is
+restricted to active/selectable records. See [FF-05 contracts](location-category-management.md).
+All other HTTP paths and methods are denied by default. CORS permits only configured origins and
 Authorization/Content-Type headers; credentials/cookies are disabled. The API
 is stateless and accepts bearer tokens rather than session cookies, so CSRF,
 form login, HTTP Basic and server-session logout are disabled.

@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-04)
+## Current foundation (FF-01 through FF-05)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -16,6 +16,8 @@ transactional service to repository and returns a public response DTO.
 `RequestDetails` demonstrates Bean Validation without implementing submission.
 FF-04 implements registration, email OTP verification, login, JWT authentication,
 and role/ownership authorization foundations; see [authentication and API contracts](authentication.md).
+FF-05 extends `location` and `category` with ADMIN management APIs and paginated,
+active-only reads for REPORTER/TECHNICIAN; see [location/category API contracts](location-category-management.md).
 Request transitions remain outside this foundation. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
