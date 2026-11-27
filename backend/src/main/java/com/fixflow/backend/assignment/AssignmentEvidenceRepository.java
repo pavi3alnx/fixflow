@@ -12,7 +12,7 @@ public class AssignmentEvidenceRepository {
     public AssignmentEvidenceRepository(JdbcTemplate jdbc) { this.jdbc=jdbc; }
     public void attach(long assignmentId,long requestId,long technicianId,List<Long> ids) {
         for(Long id:ids) {
-            var valid=jdbc.queryForObject("select count(*) from attachments t where id=? and request_id=? and uploaded_by=? and purpose='REPAIR_EVIDENCE' and created_at >= (select assigned_at from assignments where id=?) and not exists(select 1 from assignment_evidence e where e.attachment_id=t.id)",Long.class,id,requestId,technicianId,assignmentId);
+            var valid=jdbc.queryForObject("select count(*) from attachments t where id=? and request_id=? and uploaded_by=? and purpose='REPAIR_EVIDENCE' and created_at >= (select assigned_at from assignments where id=?) and (assignment_id is null or assignment_id=?) and not exists(select 1 from assignment_evidence e where e.attachment_id=t.id)",Long.class,id,requestId,technicianId,assignmentId,assignmentId);
             if(valid==null || valid!=1) throw new BadRequestException("Evidence must be this technician's repair-evidence attachment for the request.");
             jdbc.update("insert into assignment_evidence(assignment_id,attachment_id) values (?,?)",assignmentId,id);
         }

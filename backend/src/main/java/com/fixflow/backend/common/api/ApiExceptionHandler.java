@@ -11,6 +11,10 @@ import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(com.fixflow.backend.attachment.PhotoFailure.class)
+    public ProblemDetail photo(com.fixflow.backend.attachment.PhotoFailure e) {return ProblemDetail.forStatusAndDetail(e.status(),e.getMessage());}
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ProblemDetail oversized(Exception e) {return ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE,"The upload exceeds the configured request-size limit.");}
     @ExceptionHandler(BadRequestException.class)
     public ProblemDetail businessValidation(BadRequestException e) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());

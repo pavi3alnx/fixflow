@@ -45,4 +45,8 @@ public class Attachment {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
+
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="assignment_id")
+    private com.fixflow.backend.assignment.Assignment assignment;
 }

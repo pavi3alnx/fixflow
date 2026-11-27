@@ -181,4 +181,6 @@ Run `.\mvnw.cmd -B clean verify` from backend with Docker. Tests use disposable
 PostgreSQL, mock SMTP, cover onboarding/suspension/token revocation, roles,
 full lifecycle/evidence/history/rollback and independent-transaction races for
 assignment, reassignment, start, resolution, confirmation and deactivation.
-Password reset, uploads, comments, notifications, interfaces and ML are deferred.
+FF-09 implements [uploads, comments and in-app notifications](communication-photos-notifications.md),
+including episode-bound repair photos for the evidence references above.
+Password reset, interfaces and ML remain deferred.

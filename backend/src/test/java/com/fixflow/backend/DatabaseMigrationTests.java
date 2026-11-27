@@ -10,6 +10,32 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DatabaseMigrationTests {
+    @Test
+    void communicationUpgradeFromV8PreservesRowsAndAddsScopedReferencesAndDeduplication() throws SQLException {
+        flyway("8").migrate();fixture();
+        execute("""
+            INSERT INTO comments(request_id,author_id,body) VALUES(1,1,'Existing conversation');
+            INSERT INTO assignments(request_id,technician_id,assigned_by) VALUES(1,2,3);
+            INSERT INTO attachments(request_id,uploaded_by,purpose,storage_provider,storage_key,original_filename,media_type,size_bytes)
+              VALUES(1,2,'REPAIR_EVIDENCE','legacy','old-key','photo.png','image/png',100);
+            INSERT INTO assignment_evidence(assignment_id,attachment_id) VALUES(1,1);
+            INSERT INTO notifications(recipient_id,request_id,event_type,title,message) VALUES(1,1,'LEGACY','Existing','Legacy message');
+            """);
+        var comments=rows("select id,request_id,author_id,body,created_at from comments");
+        var photos=rows("select id,request_id,uploaded_by,storage_key,created_at from attachments");
+        var notices=rows("select id,recipient_id,request_id,event_type,title,message,created_at,read_at from notifications");
+        assertEquals(1,flyway(null).migrate().migrationsExecuted);
+        assertEquals(comments,rows("select id,request_id,author_id,body,created_at from comments"));
+        assertEquals(photos,rows("select id,request_id,uploaded_by,storage_key,created_at from attachments"));
+        assertEquals(notices,rows("select id,recipient_id,request_id,event_type,title,message,created_at,read_at from notifications"));
+        assertEquals(List.of("1|1|"),rows("select assignment_id,attachment_id from assignment_evidence"));
+        assertEquals(List.of("true|"),rows("select (assignment_id is null)::text from attachments"));
+        execute("UPDATE attachments SET assignment_id=1 WHERE id=1");
+        rejected("23503","UPDATE attachments SET assignment_id=9223372036854775807 WHERE id=1");
+        execute("UPDATE notifications SET event_key='legacy-event' WHERE id=1");
+        rejected("23505","INSERT INTO notifications(recipient_id,request_id,event_type,title,message,event_key) VALUES(1,1,'LEGACY','Duplicate','Duplicate','legacy-event')");
+        flyway(null).validate();
+    }
     private TestDatabase database;
     @BeforeEach
     void isolatedDatabase() throws SQLException { database = new TestDatabase(); }
@@ -61,7 +87,7 @@ class DatabaseMigrationTests {
     @Test
     void freshMigrationSeedsIdentityAndIsRepeatable() throws SQLException {
         var f = flyway(null);
-        assertEquals(8, f.migrate().migrationsExecuted);
+        assertEquals(9, f.migrate().migrationsExecuted);
         assertEquals(14, rows("SELECT tablename FROM pg_tables WHERE schemaname='public'").size());
         assertEquals(List.of("1|REPORTER|", "2|TECHNICIAN|", "3|ADMIN|"), rows("SELECT id,name FROM roles ORDER BY id"));
         assertEquals(List.of("CLEANING|", "ELECTRICAL|", "FURNITURE|", "HVAC|", "NETWORK|", "OTHER|", "PLUMBING|"),
@@ -100,7 +126,7 @@ class DatabaseMigrationTests {
         var f = flyway(null);
         assertThrows(FlywayException.class, f::migrate);
         f.baseline();
-        assertEquals(7, f.migrate().migrationsExecuted);
+        assertEquals(8, f.migrate().migrationsExecuted);
         var expanded=identityStructure();
         assertEquals(structure, expanded.stream().filter(row->!row.startsWith("users|administratively_disabled|")&&!row.startsWith("users|token_version|")).toList());
         assertEquals(structure.size()+2,expanded.size());

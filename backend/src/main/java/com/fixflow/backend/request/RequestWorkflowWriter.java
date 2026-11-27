@@ -12,8 +12,10 @@ public class RequestWorkflowWriter {
     private final MaintenanceRequestRepository requests;
     private final StatusHistoryRepository history;
     private final UserRepository users;
-    public RequestWorkflowWriter(MaintenanceRequestRepository requests, StatusHistoryRepository history, UserRepository users) {
+    private final com.fixflow.backend.notification.NotificationPublisher notifications;
+    public RequestWorkflowWriter(MaintenanceRequestRepository requests, StatusHistoryRepository history, UserRepository users,com.fixflow.backend.notification.NotificationPublisher notifications) {
         this.requests = requests; this.history = history; this.users = users;
+        this.notifications=notifications;
     }
     public MaintenanceRequest locked(long id, Instant expected) {
         var request = locked(id); checkExpected(request,expected);
@@ -33,5 +35,6 @@ public class RequestWorkflowWriter {
         var entry = new StatusHistory(); entry.setRequest(request); entry.setPreviousStatus(previous); entry.setNewStatus(target);
         entry.setReason(reason); entry.setChangedBy(users.getReferenceById(actorId())); entry.setChangedAt(request.getUpdatedAt());
         history.saveAndFlush(entry);
+        if(target!=RequestStatus.ASSIGNED) notifications.publish(request,"STATUS_"+target,"history:"+entry.getId(),actorId());
     }
 }
