@@ -119,6 +119,11 @@ public class SecurityConfig {
                                 "/api/technician/maintenance-requests/{id}/hold","/api/technician/maintenance-requests/{id}/resume",
                                 "/api/technician/maintenance-requests/{id}/progress","/api/technician/maintenance-requests/{id}/resolve").hasRole("TECHNICIAN")
                         .requestMatchers(HttpMethod.PATCH,"/api/maintenance-requests/{id}/confirmation","/api/maintenance-requests/{id}/reopening").hasRole("REPORTER")
+                        .requestMatchers(HttpMethod.GET,"/api/maintenance-requests/{id}/comments","/api/maintenance-requests/{id}/attachments",
+                                "/api/maintenance-requests/{id}/attachments/{attachmentId}/download","/api/notifications","/api/notifications/unread-count").hasAnyRole("REPORTER","TECHNICIAN","ADMIN")
+                        .requestMatchers(HttpMethod.POST,"/api/maintenance-requests/{id}/comments").hasAnyRole("REPORTER","TECHNICIAN","ADMIN")
+                        .requestMatchers(HttpMethod.POST,"/api/maintenance-requests/{id}/attachments").hasAnyRole("REPORTER","TECHNICIAN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/notifications/{id}/read","/api/notifications/read-all").hasAnyRole("REPORTER","TECHNICIAN","ADMIN")
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(o -> o
                         .authenticationEntryPoint((req, res, ex) -> {

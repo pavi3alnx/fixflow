@@ -24,9 +24,11 @@ public class AssignmentWorkflowService {
     private final RequestAccess access;
     private final StatusHistoryRepository history;
     private final AssignmentEvidenceRepository evidence;
+    private final com.fixflow.backend.notification.NotificationPublisher notifications;
     public AssignmentWorkflowService(AssignmentRepository assignments,UserRepository users,RequestWorkflowWriter writer,
-                                     RequestAccess access,StatusHistoryRepository history,AssignmentEvidenceRepository evidence) {
+                                     RequestAccess access,StatusHistoryRepository history,AssignmentEvidenceRepository evidence,com.fixflow.backend.notification.NotificationPublisher notifications) {
         this.assignments=assignments;this.users=users;this.writer=writer;this.access=access;this.history=history;this.evidence=evidence;
+        this.notifications=notifications;
     }
     @Transactional @PreAuthorize("hasRole('ADMIN')")
     public RequestResponse assign(long id,Assign input,boolean reassign) {
@@ -44,13 +46,15 @@ public class AssignmentWorkflowService {
         assignment.setAssignedBy(users.getReferenceById(writer.actorId()));assignment.setAssignedAt(now);assignments.saveAndFlush(assignment);
         if(request.getStatus()==RequestStatus.ASSIGNED) writer.touch(request);
         else writer.transition(request,RequestStatus.ASSIGNED,input.reason());
+        notifications.publish(request,reassign?"REASSIGNED":"ASSIGNED","assignment:"+assignment.getId(),writer.actorId());
         return RequestResponse.from(request);
     }
     @Transactional @PreAuthorize("hasRole('TECHNICIAN')")
     public RequestResponse accept(long id,Action input) {
         var request=writer.locked(id);var assignment=owned(id);writer.checkExpected(request,input.expectedUpdatedAt());
         if(request.getStatus()!=RequestStatus.ASSIGNED || assignment.getAcceptedAt()!=null) throw new ConflictException("Only an unaccepted assigned request can be accepted.");
-        assignment.setAcceptedAt(eventTime(request));writer.touch(request);assignments.flush();return RequestResponse.from(request);
+        assignment.setAcceptedAt(eventTime(request));writer.touch(request);assignments.flush();
+        notifications.publish(request,"WORK_ACCEPTED","accept:"+assignment.getId(),writer.actorId());return RequestResponse.from(request);
     }
     @Transactional @PreAuthorize("hasRole('TECHNICIAN')")
     public RequestResponse work(long id,String operation,Action input) {
@@ -77,7 +81,8 @@ public class AssignmentWorkflowService {
         var request=writer.locked(id);var assignment=owned(id);writer.checkExpected(request,input.expectedUpdatedAt());
         if(!Set.of(RequestStatus.IN_PROGRESS,RequestStatus.ON_HOLD).contains(request.getStatus()) || assignment.getStartedAt()==null)
             throw new ConflictException("Progress can be recorded only after work starts.");
-        requireNote(input.notes(),10000);append(assignment,input.notes(),eventTime(request));writer.touch(request);assignments.flush();return RequestResponse.from(request);
+        requireNote(input.notes(),10000);append(assignment,input.notes(),eventTime(request));writer.touch(request);assignments.flush();
+        notifications.publish(request,"WORK_PROGRESS","progress:"+id+":"+request.getUpdatedAt(),writer.actorId());return RequestResponse.from(request);
     }
     @Transactional @PreAuthorize("hasRole('TECHNICIAN')")
     public RequestResponse resolve(long id,Resolution input) {

@@ -1,6 +1,6 @@
 # FixFlow architecture and local setup
 
-## Current foundation (FF-01 through FF-08)
+## Current foundation (FF-01 through FF-09)
 
 The backend is a Spring Boot 4.1.1 modular monolith rooted at
 `com.fixflow.backend`. It contains the application entry point, a Spring context
@@ -25,7 +25,9 @@ see [administrative workflow contracts and matrix](admin-workflow.md).
 FF-08 completes technician onboarding, assignment/work/resolution and reporter
 confirmation/reopening; see [technician workflow](technician-workflow.md).
 V8 adds suspension/token-revocation metadata, reassignment reasons and evidence
-links. Existing databases require reviewed explicit
+links. FF-09 adds [comments, secure photos and transactional in-app
+notifications](communication-photos-notifications.md); V9 adds nullable episode/
+event references and notification deduplication. Existing databases require reviewed explicit
 adoption before startup; implementation does not migrate the local database.
 
 The intended system flow is **React → Spring Boot API → PostgreSQL**. React

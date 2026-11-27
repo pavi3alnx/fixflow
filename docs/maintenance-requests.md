@@ -193,5 +193,5 @@ are required.
 
 FF-07 implements supported [administrative status operations](admin-workflow.md).
 FF-08 implements assignment/resolution and reporter confirmation/reopening.
-Comments, photo uploads, notifications, dashboards and ML prediction remain
-deferred to their respective issues.
+FF-09 implements [shared comments, photos and in-app notifications](communication-photos-notifications.md).
+Dashboards, frontend and ML prediction remain deferred to their respective issues.

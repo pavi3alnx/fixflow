@@ -29,3 +29,6 @@ __pycache__/
 
 # Logs
 *.log
+
+# Optional local photo storage (configure outside the repository in production).
+.fixflow-photos/

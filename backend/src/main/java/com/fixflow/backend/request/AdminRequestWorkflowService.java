@@ -17,10 +17,12 @@ public class AdminRequestWorkflowService {
     private final StatusHistoryRepository history;
     private final AssignmentRepository assignments;
     private final RequestWorkflowWriter writer;
+    private final com.fixflow.backend.notification.NotificationPublisher notifications;
     public AdminRequestWorkflowService(MaintenanceRequestRepository requests, StatusHistoryRepository history,
-                                        AssignmentRepository assignments, RequestWorkflowWriter writer) {
+                                        AssignmentRepository assignments, RequestWorkflowWriter writer,com.fixflow.backend.notification.NotificationPublisher notifications) {
         this.requests = requests; this.history = history; this.assignments = assignments;
         this.writer = writer;
+        this.notifications=notifications;
     }
     @Transactional
     public RequestResponse verify(long id, Transition input) {
@@ -43,6 +45,7 @@ public class AdminRequestWorkflowService {
         RequestWorkflowPolicy.validatePriority(request.getStatus());
         if (request.getPriority() != input.priority()) {
             request.setPriority(input.priority()); requests.flush();
+            notifications.publish(request,input.priority()==Priority.URGENT?"URGENT_PRIORITY":"PRIORITY_CHANGED","priority:"+request.getId()+":"+request.getUpdatedAt(),writer.actorId());
         }
         // A fresh same-priority write is a no-op: no timestamp change and no fake status history.
         return RequestResponse.from(request);

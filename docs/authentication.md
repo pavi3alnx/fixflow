@@ -124,6 +124,8 @@ FF-08 adds [technician onboarding and work routes](technician-workflow.md).
 Technician deactivation/suspension increments a persisted token version; old
 tokens remain revoked after reactivation. Suspended pending accounts cannot
 use OTP verification/resend to bypass an administrative decision.
+FF-09 protects [request comments/photos and recipient-only notifications](communication-photos-notifications.md)
+with the same roles, current request visibility and token revocation checks.
 All other HTTP paths and methods are denied by default. CORS permits only configured origins and
 Authorization/Content-Type headers; credentials/cookies are disabled. The API
 is stateless and accepts bearer tokens rather than session cookies, so CSRF,

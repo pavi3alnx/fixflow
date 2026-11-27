@@ -27,11 +27,13 @@ public class MaintenanceRequestService {
     private final CategoryRepository categories;
     private final RequestAccess access;
     private final Clock clock;
+    private final com.fixflow.backend.notification.NotificationPublisher notifications;
     public MaintenanceRequestService(MaintenanceRequestRepository requests, StatusHistoryRepository history,
                                      UserRepository users, BuildingRepository buildings, RoomRepository rooms,
-                                     CategoryRepository categories, RequestAccess access, Clock clock) {
+                                     CategoryRepository categories, RequestAccess access, Clock clock,com.fixflow.backend.notification.NotificationPublisher notifications) {
         this.requests = requests; this.history = history; this.users = users; this.buildings = buildings;
         this.rooms = rooms; this.categories = categories; this.access = access; this.clock = clock;
+        this.notifications=notifications;
     }
     public RequestResponse get(long id) {
         return RequestResponse.from(requests.findOne(visible(id)).orElseThrow(ResourceNotFoundException::new));
@@ -55,6 +57,7 @@ public class MaintenanceRequestService {
         request.setCreatedAt(now); request.setUpdatedAt(now); requests.saveAndFlush(request);
         var initial = new StatusHistory(); initial.setRequest(request); initial.setChangedBy(reporter);
         initial.setNewStatus(RequestStatus.OPEN); initial.setChangedAt(now); history.saveAndFlush(initial);
+        notifications.publish(request,"REQUEST_SUBMITTED","submitted:"+request.getId(),reporter.getId());
         return RequestResponse.from(request);
     }
     @Transactional
@@ -63,7 +66,9 @@ public class MaintenanceRequestService {
         var request = requests.lockOwned(id, Long.valueOf(authentication().getName())).orElseThrow(ResourceNotFoundException::new);
         if (request.getStatus() != RequestStatus.OPEN)
             throw new ConflictException("Only OPEN requests may be edited by their reporter.");
-        apply(request, input); requests.flush(); return RequestResponse.from(request);
+        var previous=request.getUpdatedAt();apply(request, input); requests.flush();
+        if(!previous.equals(request.getUpdatedAt())) notifications.publish(request,"REQUEST_EDITED","edit:"+request.getId()+":"+request.getUpdatedAt(),request.getReporter().getId());
+        return RequestResponse.from(request);
     }
     private void apply(MaintenanceRequest request, RequestDetails input) {
         // Same lock order as FF-05 room writes: building before room. Category follows location.
